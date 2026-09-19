@@ -1,12 +1,21 @@
-bin/
-obj/
-node_modules/
-.vs/
-.idea/
+# macOS
 .DS_Store
-*.user
+
+# Databases and archives - NEVER commit these, they are gigabytes
 data/
-*.bak
 *.mdf
 *.ldf
+*.bak
 *.7z
+
+# .NET build output
+bin/
+obj/
+
+# Node
+node_modules/
+
+# Local settings
+.vs/
+*.user
+appsettings.Development.json
