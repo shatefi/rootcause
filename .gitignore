@@ -1,0 +1,12 @@
+bin/
+obj/
+node_modules/
+.vs/
+.idea/
+.DS_Store
+*.user
+data/
+*.bak
+*.mdf
+*.ldf
+*.7z
