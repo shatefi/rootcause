@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{color-scheme:light dark}
+  body{margin:0}
+  img{max-width:100%}
+</style>
+<title>PerformanceView Component States</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap">
+
+<style>
+:root{
+  --navy:#21344B; --magenta:#FB47FF; --btn-a:#EB50F2;
+  --green:#38A07B; --btn-b:#4C9788; --green-logo:#56A186;
+  --page:#F5F5F5; --panel:#E6E6E6; --code:#F1F1F1; --card:#FFFFFF;
+  --ink:#0A0A0A; --ink-2:#2E2E2E; --muted:#7B7B7B; --faint:#9A9A9A;
+  --line:#D6D6D6; --line-soft:#E0E0E0;
+  --crit:#C2352B; --crit-bg:#FBE9E7;
+  --warn:#8A5A00; --warn-bg:#FBF2DF;
+  --ok:#2E7D5B;   --ok-bg:#E4F3EC;
+  --sans:"Poppins",system-ui,-apple-system,Segoe UI,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#12171E; --panel:#1A212A; --code:#161D26; --card:#1A212A;
+  --ink:#EDF1F5; --ink-2:#C4CCD5; --muted:#8C98A4; --faint:#6F7B87;
+  --line:#2A343F; --line-soft:#232C36;
+  --crit:#F09189; --crit-bg:#2E1715; --warn:#E0B057; --warn-bg:#2A2013;
+  --ok:#6CC79B; --ok-bg:#12281E;}}
+:root[data-theme="dark"]{
+  --page:#12171E; --panel:#1A212A; --code:#161D26; --card:#1A212A;
+  --ink:#EDF1F5; --ink-2:#C4CCD5; --muted:#8C98A4; --faint:#6F7B87;
+  --line:#2A343F; --line-soft:#232C36;
+  --crit:#F09189; --crit-bg:#2E1715; --warn:#E0B057; --warn-bg:#2A2013;
+  --ok:#6CC79B; --ok-bg:#12281E;}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);line-height:1.55}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.wrap{max-width:1200px;margin:0 auto;padding:40px 28px 80px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h1 em{font-style:normal;color:var(--green-logo)}
+.lede{margin:0 0 8px;color:var(--muted);font-size:14.5px;max-width:70ch}
+.meta{margin:0 0 34px;font:400 12.5px/1.7 var(--mono);color:var(--faint)}
+
+section{margin-bottom:34px}
+section > h2{font-size:17px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+section > p{margin:0 0 16px;font-size:13.5px;color:var(--muted);max-width:74ch}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.cell{background:var(--page);padding:20px 18px 22px;display:flex;flex-direction:column;gap:14px}
+.cell .st{font:600 10px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;
+  color:var(--green)}
+.cell .st.off{color:var(--faint)}
+.cell .demo{flex:1;display:flex;align-items:flex-start}
+.cell .note{font-size:11.5px;line-height:1.5;color:var(--muted);margin:0}
+
+/* ── the components, copied verbatim from performance-view.html ─────── */
+.analyse{font-family:inherit;font-size:16px;font-weight:600;color:#fff;border:0;cursor:pointer;
+  padding:14px 30px;border-radius:11px;
+  background:linear-gradient(97deg, var(--btn-a) 0%, var(--btn-b) 100%);
+  box-shadow:0 0 0 6px rgba(235,80,242,.16), 0 10px 26px rgba(235,80,242,.50),
+             0 18px 34px rgba(0,0,0,.34)}
+.analyse.hover{transform:translateY(-1px);
+  box-shadow:0 0 0 8px rgba(235,80,242,.22), 0 12px 32px rgba(235,80,242,.62),
+             0 20px 40px rgba(0,0,0,.38)}
+.analyse[disabled]{cursor:not-allowed;filter:saturate(.35) brightness(.82);
+  box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.analyse .spin{display:none;width:14px;height:14px;margin-right:9px;vertical-align:-2px;
+  border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite}
+.analyse.running .spin{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.navlink{font-family:inherit;font-size:14.5px;font-weight:400;color:var(--ink-2);
+  background:none;border:0;padding:10px 2px;cursor:pointer;position:relative}
+.navlink.hover{color:var(--green)}
+.navlink[aria-current="true"]{color:var(--green);font-weight:600}
+.navlink[aria-current="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;
+  height:3px;background:var(--green)}
+.navlink[disabled]{opacity:.42;cursor:not-allowed}
+
+.metric{border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:13px 16px;min-width:150px}
+.metric .k{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px}
+.metric .v{font:700 19px/1 var(--sans);font-variant-numeric:tabular-nums}
+.metric.na .v{color:var(--faint);font-weight:500}
+.skel{height:13px;width:76px;border-radius:6px;background:linear-gradient(90deg,
+  var(--line) 25%, var(--line-soft) 37%, var(--line) 63%);background-size:400% 100%;
+  animation:shimmer 1.3s ease-in-out infinite}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+.finding{background:var(--card);border-radius:8px;overflow:hidden;border-left:4px solid var(--line);
+  width:100%}
+.finding.s-crit{border-left-color:var(--crit)}
+.finding.s-warn{border-left-color:var(--warn)}
+.finding.s-ok{border-left-color:var(--ok)}
+.finding.hover{background:var(--code)}
+.fsum{padding:12px 13px;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.fcode{font:500 11px/1 var(--mono);padding:4px 7px;border-radius:5px;flex:none}
+.s-crit .fcode{background:var(--crit-bg);color:var(--crit)}
+.s-warn .fcode{background:var(--warn-bg);color:var(--warn)}
+.s-ok   .fcode{background:var(--ok-bg);color:var(--ok)}
+.ftag{margin-left:auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--faint)}
+.fhead{flex-basis:100%;margin:0;font-size:13px;font-weight:500;line-height:1.45}
+
+.op{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+  width:100%;text-align:left;font-family:inherit;cursor:pointer}
+.op.hover{border-color:var(--green)}
+.op.flag{border-color:var(--crit);background:var(--crit-bg)}
+.op.lit{box-shadow:0 0 0 3px rgba(56,160,123,.35);border-color:var(--green)}
+.op .nm{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+.op .ob{display:block;font:400 11px/1.4 var(--mono);color:var(--muted)}
+.op .pc{display:block;font:500 11px/1 var(--mono);color:var(--faint);margin-top:7px}
+.op.flag .pc{color:var(--crit)}
+
+.tbl{background:var(--card);border-radius:8px;border-left:4px solid var(--line);width:100%;
+  overflow:hidden}
+.tbl.open{border-left-color:var(--green)}
+.tbl .sum{display:flex;align-items:baseline;gap:9px;padding:11px 13px;
+  font:500 13px/1.4 var(--mono);color:var(--ink-2)}
+.tbl.hover .sum{background:var(--code)}
+.tbl .sum::before{content:"▸";color:var(--faint);font-size:10px;width:10px}
+.tbl.open .sum::before{content:"▾"}
+.tbl .rw{margin-left:auto;font-size:11.5px;color:var(--muted)}
+.tbl .cl{list-style:none;margin:0;padding:4px 13px 11px 30px;border-top:1px solid var(--line-soft)}
+.tbl .cl li{font:400 11.5px/1.7 var(--mono);color:var(--muted)}
+
+.qwrap{background:var(--code);border-left:5px solid var(--green);border-radius:4px;width:100%;
+  font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--ink-2);padding:13px 15px;
+  white-space:pre-wrap}
+.qwrap.focus{box-shadow:0 0 0 3px rgba(56,160,123,.28)}
+.qwrap.disabled{opacity:.5;border-left-color:var(--line)}
+
+.drop{background:var(--code);border-left:5px solid var(--green);border-radius:4px;width:100%;
+  padding:20px 16px;text-align:center;font-size:12.5px;color:var(--muted)}
+.drop b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:5px}
+.drop.over{background:var(--ok-bg);border-left-color:var(--ok);
+  box-shadow:inset 0 0 0 2px var(--ok)}
+.drop .file{display:flex;align-items:center;gap:12px;text-align:left}
+.drop .fi{width:34px;height:34px;border-radius:7px;background:var(--ok-bg);color:var(--ok);
+  display:grid;place-items:center;font:500 9px/1 var(--mono);flex:none}
+.drop .fn{display:block;font:500 12.5px/1.3 var(--mono);color:var(--ink);
+  word-break:break-all;margin-bottom:2px}
+.drop .fs{display:block;font-size:11px;color:var(--muted)}
+
+.foot{margin-top:40px;border-top:1px solid var(--line);padding-top:20px;font-size:13px;
+  color:var(--muted);line-height:1.65;max-width:74ch}
+.foot b{color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Performance<em>View</em> — component states</h1>
+  <p class="lede">Every control in the states it can actually be in. A design that only shows the
+    happy path is a picture; one that shows disabled, empty and running is a specification.</p>
+  <p class="meta">Poppins / IBM Plex Mono · accent #38A07B · magenta #FB47FF · navy #21344B<br>
+    Issue #6 · docs/design/states.html</p>
+
+  <section>
+    <h2>Analyse button</h2>
+    <p>The primary action. <b>Running</b> matters most — a plan takes a second or two, and without
+      it a visitor presses the button twice.</p>
+    <div class="grid">
+      <div class="cell"><span class="st">Default</span>
+        <div class="demo"><button class="analyse"><span class="spin"></span>Analyse</button></div>
+        <p class="note">Magenta → green gradient with a three-layer glow.</p></div>
+      <div class="cell"><span class="st">Hover</span>
+        <div class="demo"><button class="analyse hover"><span class="spin"></span>Analyse</button></div>
+        <p class="note">Lifts 1px, glow widens. No colour change.</p></div>
+      <div class="cell"><span class="st off">Disabled</span>
+        <div class="demo"><button class="analyse" disabled><span class="spin"></span>Analyse</button></div>
+        <p class="note">Desaturated, glow removed. Used while a run is in flight.</p></div>
+      <div class="cell"><span class="st">Running</span>
+        <div class="demo"><button class="analyse running" disabled><span class="spin"></span>Analysing…</button></div>
+        <p class="note">Spinner, label changes, button locked against a second press.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Source link — top nav</h2>
+    <p>Three sources. The green underline sits flush on the hero edge, with no gap.</p>
+    <div class="grid">
+      <div class="cell"><span class="st">Default</span>
+        <div class="demo"><button class="navlink">Execution Plan</button></div>
+        <p class="note">Regular weight, body colour.</p></div>
+      <div class="cell"><span class="st">Hover</span>
+        <div class="demo"><button class="navlink hover">Execution Plan</button></div>
+        <p class="note">Green text, no underline yet.</p></div>
+      <div class="cell"><span class="st">Selected</span>
+        <div class="demo"><button class="navlink" aria-current="true">Execution Plan</button></div>
+        <p class="note">Semibold, green, 3px underline.</p></div>
+      <div class="cell"><span class="st off">Disabled</span>
+        <div class="demo"><button class="navlink" disabled>External Database</button></div>
+        <p class="note">Used on the hosted demo, where this source is self-hosted only.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Metric tile</h2>
+    <p>Duration, logical reads, rows, findings. <b>Not applicable</b> is a real state — an estimated
+      plan has no duration, and saying so beats printing a zero.</p>
+    <div class="grid">
+      <div class="cell"><span class="st">Default</span>
+        <div class="demo"><div class="metric"><span class="k">Logical reads</span>
+          <span class="v">1,482,331</span></div></div>
+        <p class="note">Tabular figures so columns line up.</p></div>
+      <div class="cell"><span class="st off">Not applicable</span>
+        <div class="demo"><div class="metric na"><span class="k">Duration</span>
+          <span class="v">not run</span></div></div>
+        <p class="note">Estimated plan: compiled, never executed.</p></div>
+      <div class="cell"><span class="st off">Empty</span>
+        <div class="demo"><div class="metric na"><span class="k">Rows returned</span>
+          <span class="v">—</span></div></div>
+        <p class="note">Before the first run.</p></div>
+      <div class="cell"><span class="st">Running</span>
+        <div class="demo"><div class="metric"><span class="k">Logical reads</span>
+          <span class="skel"></span></div></div>
+        <p class="note">Shimmer at the value's height, so nothing shifts when it lands.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Finding card</h2>
+    <p>The product. Three severities, and the stripe is the only thing that changes —
+      colour is never the sole signal, the code and the tag carry it too.</p>
+    <div class="grid">
+      <div class="cell"><span class="st">Critical</span>
+        <div class="demo"><div class="finding s-crit"><div class="fsum">
+          <span class="fcode">PLAN001</span><span class="ftag">Critical</span>
+          <p class="fhead">A function on CreationDate prevents any index seek</p></div></div></div>
+        <p class="note">Collapsed. Click opens the four fields.</p></div>
+      <div class="cell"><span class="st">Warning</span>
+        <div class="demo"><div class="finding s-warn"><div class="fsum">
+          <span class="fcode">PLAN008</span><span class="ftag">Warning</span>
+          <p class="fhead">The sort spilled to tempdb</p></div></div></div>
+        <p class="note">Worth fixing, not urgent.</p></div>
+      <div class="cell"><span class="st">Suggestion</span>
+        <div class="demo"><div class="finding s-ok"><div class="fsum">
+          <span class="fcode">PLAN007</span><span class="ftag">Suggestion</span>
+          <p class="fhead">An index would help — but only after the rewrite</p></div></div></div>
+        <p class="note">Conditional advice.</p></div>
+      <div class="cell"><span class="st">Hover</span>
+        <div class="demo"><div class="finding s-crit hover"><div class="fsum">
+          <span class="fcode">PLAN003</span><span class="ftag">Critical</span>
+          <p class="fhead">Key lookup executing once per returned row</p></div></div></div>
+        <p class="note">Row tints; the stripe is unchanged.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Plan operator</h2>
+    <p>Nodes in the execution plan. <b>Flagged</b> means a rule fired on it; <b>selected</b> is the
+      one the visitor clicked, which scrolls its finding into view.</p>
+    <div class="grid">
+      <div class="cell"><span class="st">Default</span>
+        <div class="demo"><button class="op"><span class="nm">Index Seek</span>
+          <span class="ob">IX_Posts_OwnerUserId</span><span class="pc">3% of plan</span></button></div>
+        <p class="note">Nothing wrong with this operator.</p></div>
+      <div class="cell"><span class="st">Hover</span>
+        <div class="demo"><button class="op hover"><span class="nm">Nested Loops</span>
+          <span class="ob">Inner Join</span><span class="pc">4% of plan</span></button></div>
+        <p class="note">Border turns green.</p></div>
+      <div class="cell"><span class="st">Flagged</span>
+        <div class="demo"><button class="op flag"><span class="nm">Key Lookup</span>
+          <span class="ob">PK_Posts_Id · 1,106 execs</span><span class="pc">93% of plan</span></button></div>
+        <p class="note">A rule fired here.</p></div>
+      <div class="cell"><span class="st">Selected</span>
+        <div class="demo"><button class="op lit"><span class="nm">Clustered Index Scan</span>
+          <span class="ob">PK_Posts_Id</span><span class="pc">57% of plan</span></button></div>
+        <p class="note">Green focus ring; its finding opens.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Schema table row</h2>
+    <p>Same card shape as a finding, so the two rails read as siblings.</p>
+    <div class="grid">
+      <div class="cell"><span class="st">Collapsed</span>
+        <div class="demo"><div class="tbl"><div class="sum">Posts<span class="rw">3.7M</span></div></div></div>
+        <p class="note">Row count beside the name — scale decides whether a finding matters.</p></div>
+      <div class="cell"><span class="st">Hover</span>
+        <div class="demo"><div class="tbl hover"><div class="sum">Users<span class="rw">299k</span></div></div></div>
+        <p class="note">Row tints.</p></div>
+      <div class="cell"><span class="st">Open</span>
+        <div class="demo"><div class="tbl open"><div class="sum">Votes<span class="rw">5.2M</span></div>
+          <ul class="cl"><li>Id · pk</li><li>PostId · fk</li><li>VoteTypeId · fk</li></ul></div></div>
+        <p class="note">Stripe turns green; columns listed.</p></div>
+      <div class="cell"><span class="st off">Unknown size</span>
+        <div class="demo"><div class="tbl"><div class="sum">Posts<span class="rw">size unknown</span></div></div></div>
+        <p class="note">Plan-file source: tables are named, row counts are not.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Query editor and plan drop zone</h2>
+    <p>The centre input. Which one shows depends on the source.</p>
+    <div class="grid">
+      <div class="cell"><span class="st">Default</span>
+        <div class="demo"><div class="qwrap">SELECT p.Id, p.Title
+FROM   dbo.Posts AS p
+WHERE  p.PostTypeId = 1;</div></div>
+        <p class="note">Green left edge, monospace.</p></div>
+      <div class="cell"><span class="st">Focused</span>
+        <div class="demo"><div class="qwrap focus">SELECT p.Id, p.Title
+FROM   dbo.Posts AS p
+WHERE  p.PostTypeId = 1;</div></div>
+        <p class="note">Green ring, no border colour change.</p></div>
+      <div class="cell"><span class="st off">Empty drop zone</span>
+        <div class="demo"><div class="drop"><b>Drop a .sqlplan file here</b>
+          <span>or choose one</span></div></div>
+        <p class="note">Shown for the Execution Plan source.</p></div>
+      <div class="cell"><span class="st">File loaded</span>
+        <div class="demo"><div class="drop"><div class="file"><span class="fi">XML</span>
+          <span><span class="fn">posts-2012-slow.sqlplan</span>
+          <span class="fs">Actual plan · 148 KB</span></span></div></div></div>
+        <p class="note">Name, type and size, so they know which file is loaded.</p></div>
+    </div>
+  </section>
+
+  <p class="foot"><b>Why this sheet exists.</b> Most portfolio designs show one screen with ideal
+    data in it. Deciding what a metric shows when there is nothing to show, what a button does while
+    it is working, and how a source that is unavailable appears — that is the difference between a
+    mockup and something a developer can build from without asking questions.
+    <b>These states are all implemented in <code>performance-view.html</code>.</b></p>
+</div>
+</body>
+</html>
