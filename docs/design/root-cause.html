@@ -8,7 +8,7 @@
   body{margin:0}
   img{max-width:100%}
 </style>
-<title>PerformanceView</title>
+<title>RootCause</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap">
@@ -435,7 +435,7 @@ textarea.sql:focus{outline:none}
 
 <nav class="topnav">
   <div class="shell">
-    <a class="logo" href="#top">Performance<em>View</em></a>
+    <a class="logo" href="#top">Root<em>Cause</em></a>
     <div class="navlinks" role="tablist" aria-label="Section">
       <button class="navlink" data-sec="query" aria-current="true"><span class="lg">Query Analyser</span><span class="sm">Query</span></button>
       <button class="navlink" data-sec="load"  aria-current="false"><span class="lg">Load &amp; Concurrency</span><span class="sm">Load</span></button>
@@ -700,15 +700,19 @@ const SCHEMA=[
  {t:"LinkTypes",rows:"2",cols:[["Id","pk"],["Type",""]]}
 ];
 
+// Phase 1 of the catalogue - the ten SQL Server names outright in the plan XML.
+// Full 26-rule catalogue lives in the project guide, Part A3.
 const RULES=[
- ["PLAN001","Function wrapped around a filtered column"],
  ["PLAN002","Implicit conversion losing a seek"],
- ["PLAN003","Key lookup executing once per row"],
- ["PLAN004","Parameter sniffing — compiled value unlike runtime value"],
- ["PLAN005","OR across columns disabling both indexes"],
- ["PLAN006","Estimated rows far from actual rows"],
  ["PLAN007","Missing index, checked against existing ones"],
- ["PLAN008","Sort or hash spilling to tempdb"]
+ ["PLAN015","Statistics missing on a filtered column"],
+ ["PLAN016","Parameter sniffing — compiled value unlike runtime value"],
+ ["PLAN018","Sort or hash spilling to tempdb"],
+ ["PLAN019","Excessive memory grant"],
+ ["PLAN020","No join predicate — accidental cartesian"],
+ ["PLAN022","Scalar UDF blocking parallelism"],
+ ["PLAN023","Cursor doing row-by-row work"],
+ ["PLAN025","The optimiser gave up early — plan may not be the best one"]
 ];
 
 const CASES={
@@ -716,7 +720,7 @@ const CASES={
   sql:`-- Top-scoring questions asked in 2012\nSELECT p.Id, p.Title, p.Score\nFROM   dbo.Posts AS p\nWHERE  YEAR(p.CreationDate) = 2012\n  AND  p.PostTypeId = 1\nORDER BY p.Score DESC;`,
   metrics:[["Duration","4.21 s"],["Logical reads","1,482,331"],["Rows returned","218,447"]],
   plan:[{n:"SELECT",o:"",pct:""},
-        {n:"Sort",o:"Score DESC",pct:"31%",flag:1,rows:"218,447",hv:1,fid:"PLAN008"},
+        {n:"Sort",o:"Score DESC",pct:"31%",flag:1,rows:"218,447",hv:1,fid:"PLAN018"},
         {n:"Filter",o:"YEAR(CreationDate)=2012",pct:"12%",flag:1,rows:"3,729,195",hv:1,fid:"PLAN001"},
         {n:"Clustered Index Scan",o:"PK_Posts_Id",pct:"57%",flag:1,rows:"3,729,195",hv:1,fid:"PLAN001"}],
   findings:[
@@ -726,7 +730,7 @@ const CASES={
     sqlfix:"WHERE p.CreationDate >= '2012-01-01'\n  AND p.CreationDate <  '2013-01-01'",
     cost:"Free. No storage, no write penalty, no migration — only the query text changes.",
     skip:"Never, but check the boundary. Use < '2013-01-01', not <= '2012-12-31', or you silently drop rows timestamped during the last day."},
-   {id:"PLAN008",sev:"warn",tag:"Warning",head:"The sort spilled to tempdb",
+   {id:"PLAN018",sev:"warn",tag:"Warning",head:"The sort spilled to tempdb",
     what:"Memory was granted for an estimated 1,204 rows and 218,447 arrived. The sort ran out of its grant and finished on disk, which is where most of the 4.2 seconds went.",
     fix:"Fix PLAN001 first. A seek produces a far better estimate and the spill usually disappears with it.",
     sqlfix:"",
@@ -744,9 +748,9 @@ const CASES={
   plan:[{n:"SELECT",o:"",pct:""},
         {n:"Nested Loops",o:"Inner Join",pct:"4%",rows:"1,106"},
         {n:"Index Seek",o:"IX_Posts_OwnerUserId",pct:"3%",rows:"1,106"},
-        {n:"Key Lookup",o:"PK_Posts_Id · 1,106 execs",pct:"93%",flag:1,rows:"1,106",hv:1,fid:"PLAN003"}],
+        {n:"Key Lookup",o:"PK_Posts_Id · 1,106 execs",pct:"93%",flag:1,rows:"1,106",hv:1,fid:"PLAN008"}],
   findings:[
-   {id:"PLAN003",sev:"crit",tag:"Critical",head:"Key lookup executing once per returned row",
+   {id:"PLAN008",sev:"crit",tag:"Critical",head:"Key lookup executing once per returned row",
     what:"IX_Posts_OwnerUserId finds the rows but does not carry Title, Score or CreationDate, so the engine returns to the clustered index 1,106 separate times. That one operator is 93% of the plan's cost.",
     fix:"Widen the index you already have rather than creating a second one on the same key:",
     sqlfix:"CREATE INDEX IX_Posts_OwnerUserId\n    ON dbo.Posts (OwnerUserId)\n    INCLUDE (Title, Score, CreationDate)\n    WITH (DROP_EXISTING = ON);",
@@ -756,9 +760,9 @@ const CASES={
   sql:`-- Comments either by this user, or on this post\nSELECT c.Id, c.Text, c.Score\nFROM   dbo.Comments AS c\nWHERE  c.UserId = @UserId\n   OR  c.PostId = @PostId;`,
   metrics:[["Duration","2.04 s"],["Logical reads","618,240"],["Rows returned","47"]],
   plan:[{n:"SELECT",o:"",pct:""},
-        {n:"Clustered Index Scan",o:"PK_Comments_Id",pct:"100%",flag:1,rows:"1,617,010",hv:1,fid:"PLAN005"}],
+        {n:"Clustered Index Scan",o:"PK_Comments_Id",pct:"100%",flag:1,rows:"1,617,010",hv:1,fid:"PLAN004"}],
   findings:[
-   {id:"PLAN005",sev:"crit",tag:"Critical",head:"An OR across two columns disables both indexes",
+   {id:"PLAN004",sev:"crit",tag:"Critical",head:"An OR across two columns disables both indexes",
     what:"A row can satisfy either side, so the engine cannot seek one index and trust the result — it scans all 1.6M comments to return 47 rows.",
     fix:"Split it into two seekable queries and combine them:",
     sqlfix:"SELECT c.Id, c.Text, c.Score\nFROM   dbo.Comments AS c\nWHERE  c.UserId = @UserId\nUNION\nSELECT c.Id, c.Text, c.Score\nFROM   dbo.Comments AS c\nWHERE  c.PostId = @PostId;",
