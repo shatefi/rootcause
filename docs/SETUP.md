@@ -75,10 +75,11 @@ container refuses to start. Compose fails with a clear message if the variable i
 | Connecting from                   | Server                                                        |
 | --------------------------------- | ------------------------------------------------------------- |
 | A service **inside** Compose      | `sqlserver,1433` — containers find each other by service name |
-| Azure Data Studio **on your Mac** | `localhost,1433`                                              |
+| VS Code **on your Mac**           | `localhost,1433`                                              |
 
 
-Log in as `sa` with the password from `.env`. Azure Data Studio needs **Trust server certificate**
+Use VS Code with the **SQL Server (mssql)** extension (`code --install-extension ms-mssql.mssql`).
+Log in as `sa` with the password from `.env`. The connection needs **Trust server certificate**
 ticked, because the container's certificate is self-signed.
 
 ---
@@ -112,7 +113,7 @@ FOR ATTACH;
 > `.mdf` are the original Windows ones, so SQL Server cannot find the others by itself.
 
 Copying the files into the folder does **not** create a database — SQL Server never scans
-directories. Until the statement above runs, Azure Data Studio shows the server with no user
+directories. Until the statement above runs, VS Code shows the server with no user
 databases on it.
 
 ---
@@ -229,6 +230,6 @@ ALTER DATABASE StackOverflow2013
 | SQL Server container exits immediately      | `ACCEPT_EULA` arrived as something other than the string `"Y"`, or the password fails the complexity rule. Check `docker compose logs sqlserver`                                                                         |
 | Health check never passes                   | Verify the tools path exists: `docker compose exec sqlserver ls /opt/`. The image must have `mssql-tools18`; older images use `mssql-tools`                                                                              |
 | Attach fails with OS error 5, 31 or 38      | The bind mount cannot support the IO SQL Server needs. Copy the files into the container's own volume and attach from there: `docker compose exec sqlserver bash -c "cp /data/StackOverflow2013_* /var/opt/mssql/data/"` |
-| Server connects but no databases are listed | The database was never attached. See *Attaching it* above, and refresh the Databases node — Azure Data Studio does not poll                                                                                              |
+| Server connects but no databases are listed | The database was never attached. See *Attaching it* above, and refresh the Databases node — the connection view does not poll                                                                                              |
 
 

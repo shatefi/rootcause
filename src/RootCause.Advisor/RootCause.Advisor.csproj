@@ -2,8 +2,33 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
 
+    <!-- identity -->
+    <PackageId>RootCause.Advisor</PackageId>
+    <Title>RootCause Advisor</Title>
+    <Version>1.0.0</Version>
+    <Authors>Susan Hatefi</Authors>
+
+    <!-- the gallery page -->
+    <Description>Rule-based engine that finds why SQL queries are slow and where database designs are
+      weak, for developers and DBAs. Every finding states what is happening, the fix, what the fix costs,
+      and when to leave it alone. Database-neutral: add a provider such as RootCause.Advisor.SqlServer to
+      analyse execution plans, capture plans from queries and review schemas. The engine behind the
+      rootcause CLI.</Description>
+    <PackageTags>sql;database;performance;query-tuning;execution-plan;schema-design;diagnostics;static-analysis</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>https://github.com/shatefi/rootcause/blob/main/CHANGELOG.md</PackageReleaseNotes>
+    
+    <!-- legal and provenance -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Susan Hatefi</Copyright>
+    <PackageProjectUrl>https://github.com/shatefi/rootcause</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/shatefi/rootcause</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+    <None Include="../../docs/design/logo/icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

@@ -1,9 +1,11 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/RootCause.Advisor.SqlServer/RootCause.Advisor.SqlServer.csproj" />
     <Project Path="src/RootCause.Advisor/RootCause.Advisor.csproj" />
     <Project Path="src/RootCause.Cli/RootCause.Cli.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/RootCause.Advisor.SqlServer.Tests/RootCause.Advisor.SqlServer.Tests.csproj" />
     <Project Path="tests/RootCause.Advisor.Tests/RootCause.Advisor.Tests.csproj" />
   </Folder>
 </Solution>
