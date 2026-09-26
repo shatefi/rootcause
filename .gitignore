@@ -20,3 +20,9 @@ node_modules/
 *.user
 appsettings.Development.json
 .env
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json

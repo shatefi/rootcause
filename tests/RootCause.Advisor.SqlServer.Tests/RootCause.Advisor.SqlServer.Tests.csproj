@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -20,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\RootCause.Advisor.SqlServer\RootCause.Advisor.SqlServer.csproj" />
+    <None Include="Fixtures\**\*.sqlplan" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
