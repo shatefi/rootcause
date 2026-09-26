@@ -11,4 +11,19 @@ public sealed class PlanDocument(XDocument xml)
     public IEnumerable<XElement> Descendants(string localName) => Xml.Descendants(Ns + localName);
 
     public bool HasRuntimeStats => Descendants(PlanXmlNames.Elements.RunTimeInformation).Any();
+
+    public TargetContext ReadTargetContext()
+    {
+        var build = (string?)Xml.Root?.Attribute(PlanXmlNames.Attributes.Build);
+        if (!Version.TryParse(build, out var version))
+        {
+            throw new InvalidOperationException($"The plan's Build attribute '{build}' is not a version number.");
+        }
+        var ceModelVersion = (int?)Descendants(PlanXmlNames.Elements.StmtSimple)
+        .FirstOrDefault()?
+        .Attribute(PlanXmlNames.Attributes.CardinalityEstimationModelVersion)
+        ?? throw new InvalidOperationException("The plan has no CardinalityEstimationModelVersion.");
+
+        return new TargetContext(version.Major, null, ceModelVersion);
+    }
 }

@@ -1,7 +1,7 @@
 ﻿
 namespace RootCause.Advisor;
 
-public sealed record class Finding(
+public sealed record Finding(
     string Code, // "PLAN002", "SCHEMA003"
     Severity Severity,
     string What, // what is happening
