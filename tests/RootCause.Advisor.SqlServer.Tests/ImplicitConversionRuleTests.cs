@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 using AwesomeAssertions;
 
 
@@ -7,6 +9,7 @@ public class ImplicitConversionRuleTests
 {
     private static readonly TargetContext SqlServer2025 = new(17, null, 170);
     private readonly ImplicitConversionRule _rule = new();
+
 
     [Fact]
     public void Check_NvarcharAgainstVarcharColumn_ReturnsOneFinding()
@@ -29,4 +32,13 @@ public class ImplicitConversionRuleTests
 
         findings.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Check_CardinalityEstimateConversion_ReturnsNoFindings() =>
+    new ImplicitConversionRule()
+        .Check(TestPlansHelper.Plan("<StmtSimple><QueryPlan><Warnings>" +
+                    "<PlanAffectingConvert ConvertIssue='Cardinality Estimate' Expression='CONVERT(varchar(10),[o].[Amount],0)'/>" +
+                    "</Warnings></QueryPlan></StmtSimple>"),
+               new TargetContext(17, null, 170))
+        .Should().BeEmpty();
 }

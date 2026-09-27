@@ -26,4 +26,6 @@ public sealed class ImplicitConversionRule : PlanRule
     {
         return plan.Descendants(PlanXmlNames.Elements.PlanAffectingConvert).Where(match => (string?)match.Attribute(PlanXmlNames.Attributes.ConvertIssue) == PlanXmlNames.Values.SeekPlan);
     }
+
+    
 }
