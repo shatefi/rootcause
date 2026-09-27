@@ -1,3 +1,6 @@
+
+![CI](https://github.com/shatefi/rootcause/actions/workflows/ci.yml/badge.svg)
+
 # RootCause
 
 Finds out **why** a SQL Server query is slow — and says what the fix costs, and when to leave
