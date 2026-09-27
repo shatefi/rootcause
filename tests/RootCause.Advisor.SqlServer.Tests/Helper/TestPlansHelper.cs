@@ -12,4 +12,8 @@ internal static class TestPlansHelper
         var plan = new PlanDocument(xml);
         return plan;
     }
+
+    public static PlanDocument Plan(string statements) => new(XDocument.Parse(
+    "<ShowPlanXML xmlns='http://schemas.microsoft.com/sqlserver/2004/07/showplan' Build='17.0.1.1'>" +
+    $"<BatchSequence><Batch><Statements>{statements}</Statements></Batch></BatchSequence></ShowPlanXML>"));
 }

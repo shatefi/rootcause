@@ -19,10 +19,9 @@ public sealed class PlanDocument(XDocument xml)
         {
             throw new InvalidOperationException($"The plan's Build attribute '{build}' is not a version number.");
         }
-        var ceModelVersion = (int?)Descendants(PlanXmlNames.Elements.StmtSimple)
-        .FirstOrDefault()?
-        .Attribute(PlanXmlNames.Attributes.CardinalityEstimationModelVersion)
-        ?? throw new InvalidOperationException("The plan has no CardinalityEstimationModelVersion.");
+        var ceModelVersion = (int?)Xml.Descendants()
+        .Attributes(PlanXmlNames.Attributes.CardinalityEstimationModelVersion)
+        .FirstOrDefault();
 
         return new TargetContext(version.Major, null, ceModelVersion);
     }
