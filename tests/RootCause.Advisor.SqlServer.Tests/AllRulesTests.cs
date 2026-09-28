@@ -1,5 +1,8 @@
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 
 namespace RootCause.Advisor.SqlServer.Tests;
 
@@ -7,7 +10,7 @@ public class AllRulesTests
 {
     private static readonly IRule[] AllRules =
         [.. typeof(IRule).Assembly.GetTypes()
-            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(IRule).IsAssignableFrom(type))
+            .Where(type => type is { IsClass: true, IsAbstract: false } && typeof(PlanRule).IsAssignableFrom(type))
             .Select(type => (IRule)Activator.CreateInstance(type)!)];
 
     public static TheoryData<string[], string> PositivePlans => new()
@@ -36,5 +39,60 @@ public class AllRulesTests
         firing.Should().BeEquivalentTo(expectedCodes);
     }
 
-    
+
+}
+
+public class AnalyzerTests
+{
+    private static ServiceProvider BuildProvider() =>
+    new ServiceCollection()
+    .AddLogging()
+    .AddRootCauseSqlServer()
+    .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+
+    [Fact]
+    public void AddRootCauseSqlServer_EveryRuleClass_IsRegisteredOnce()
+    {
+        using var provider = BuildProvider();
+
+        var registeredCodes = provider.GetServices<IRule>().Select(rule => rule.Code).ToList();
+        var ruleCount = typeof(PlanRule).Assembly.GetTypes()
+            .Count(type => type is { IsClass: true, IsAbstract: false } && typeof(PlanRule).IsAssignableFrom(type));
+
+        registeredCodes.Should().HaveCount(ruleCount);
+        registeredCodes.Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void Analyze_ImplicitConversionPlan_ReturnsItsFinding()
+    {
+        using var provider = BuildProvider();
+        var analyzer = provider.GetRequiredService<Analyzer>();
+
+        var findings = analyzer.Analyze(TestPlansHelper.LoadPlan("plan002.sqlplan"));
+
+        findings.Select(finding => finding.Code).Should().Contain("PLAN002");
+    }
+
+    [Fact]
+    public void Analyze_OneRuleThrows_OtherRulesStillReturnFindings()
+    {
+        using var provider = new ServiceCollection()
+            .AddLogging()
+            .AddRootCauseSqlServer()
+            .AddSingleton<IRule>(sp => new SafeRule(new ThrowingRule(), sp.GetRequiredService<ILogger<SafeRule>>()))
+            .BuildServiceProvider();
+        var analyzer = provider.GetRequiredService<Analyzer>();
+
+        var findings = analyzer.Analyze(TestPlansHelper.LoadPlan("plan002.sqlplan"));
+
+        findings.Select(finding => finding.Code).Should().Contain("PLAN002");
+    }
+
+    private sealed class ThrowingRule : IRule
+    {
+        public string Code => "TEST001";
+        public IEnumerable<Finding> Check(PlanDocument plan, TargetContext target) =>
+            throw new InvalidOperationException("This rule always fails.");
+    }
 }
